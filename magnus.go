@@ -25,18 +25,21 @@ func generatePEM(filename string, header string, key *rsa.PrivateKey, typekey st
 		if err != nil {
 			log.Fatal(err)
 		}
-
+		// Let's create a PEM space block to write the info.
 		var pemPrivateBlock = &pem.Block{
 			Type:  header,
 			Bytes: x509.MarshalPKCS1PrivateKey(key),
 		}
+		// Finally, we create the PEM file using both the key and the PEM Block.
 		err = pem.Encode(pemPrivateKey, pemPrivateBlock)
 		if err != nil {
 			log.Fatal(err)
 		}
+		// Closing the file
 		pemPrivateKey.Close()
 
 	case "public":
+		// The same thing happens for a public PEM certificate.
 		pemPublicKey, err := os.Create(filename)
 		if err != nil {
 			log.Fatal(err)
@@ -58,11 +61,12 @@ func generatePEM(filename string, header string, key *rsa.PrivateKey, typekey st
 }
 
 func generateRSAKeyPair() *rsa.PrivateKey {
+	//Let's first generate a random RSA 4096bit key.
 	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	//Then, we call the same function twice, to create a physical PEM private and public key.
 	generatePEM("private_key.pem", "RSA PRIVATE KEY", privateKey, "private")
 	generatePEM("public_key.pem", "RSA PUBLIC KEY", privateKey, "public")
 
@@ -110,6 +114,7 @@ func importPEMPublic(filename string) *rsa.PublicKey {
 }
 
 func encryptWithRSA(key *rsa.PublicKey, AESKey string) string {
+	// We encrypt the AES Key with RSA, using SHA-256 as a hash function and of course the RSA public key.
 	encryptedBytes, err := rsa.EncryptOAEP(
 		sha256.New(),
 		rand.Reader,
@@ -202,13 +207,13 @@ func main() {
 			log.Fatal(err)
 		}
 		fmt.Println("Here's your AES-256 Key:", hex.EncodeToString(randomKey))
-	case "encryptAESKey":
+	case "RSAEncrypt":
 		if (*RSAPubKey == "default") || (*AESKey == "default") {
 			log.Fatal("You need to enter both a valid RSA Public Key, and the AES Key")
 		}
 		var pubkey = importPEMPublic(*RSAPubKey)
 		fmt.Println("Your encrypted AES-256 Key:", encryptWithRSA(pubkey, *AESKey))
-	case "decryptAESKey":
+	case "RSADecrypt":
 
 		if (*RSAPrivateKey == "default") || (*EncryptedAESKey == "default") {
 			log.Fatal("You need to enter both the RSA Private Key for decryption, and the AES Encrypted Key")
